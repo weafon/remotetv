@@ -16,6 +16,8 @@ enum RemoteCommand {
     RC_LEFT,
     RC_DOWN,
     RC_RIGHT,
+	RC_PLAY,
+	RC_PAUSE,
     RC_INVALID,
     RC_INVALID_KEY
 };

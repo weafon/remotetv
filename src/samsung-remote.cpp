@@ -64,6 +64,14 @@ void sendIRCommand(RemoteCommand command)
             irCode = 0xE0E046B9; // right
             message = "sent: right";
             break;
+		case RC_PLAY:
+			irCode = 0xE0E0E21D; // play
+			message = "sent: play";	
+			break;
+		case RC_PAUSE:
+			irCode = 0xE0E052AD; // pause
+			message = "sent: pause";
+			break;
         default:
             Serial.println("Invalid key");
             return;
