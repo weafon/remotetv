@@ -1,3 +1,4 @@
+// 這些都是跟AI一起隨便寫的醜CODE 請不要當作weafon的寫作標準喔
 // Includes enum definition of GES_* return values from readGesture()
 #include "RevEng_PAJ7620.h"
 #include "samsung-remote.h"

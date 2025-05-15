@@ -1,3 +1,4 @@
+// 這些都是跟AI一起隨便寫的醜CODE 請不要當作weafon的寫作標準喔
 #include "sonar.h"
 // 定義聲音在空氣中的速度 (公分/微秒)
 const float soundSpeed = 0.0343;

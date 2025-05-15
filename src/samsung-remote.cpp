@@ -1,3 +1,4 @@
+// 這些都是跟AI一起隨便寫的醜CODE 請不要當作weafon的寫作標準喔
 #include <Arduino.h>
 
 #include <IRremote.hpp> // include the library
