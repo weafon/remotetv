@@ -167,7 +167,7 @@ void loop()
 
 	} else if (isJumping) {
 
-		if (millis() - tm_lastjump >= intv_jump) {
+		if (((int)(millis() - tm_lastjump)) >= intv_jump) {
 			tm_lastjump = millis();		
 			Serial.println("Jumping");
 			cmd = RC_RIGHT;
@@ -182,6 +182,7 @@ void loop()
 	{
 		led_flash_green();
 		cn_tobe_pause = (cn_tobe_pause<CN_LEAVE)?cn_tobe_pause+1:cn_tobe_pause;			
+		
 		if ((cn_tobe_pause == CN_LEAVE)&&(isPlaying))
 		{
 			isPlaying = false;
@@ -189,7 +190,8 @@ void loop()
 			tm_lastpause = millis();
 			sendIRCommand(RC_PAUSE);
 			Serial.println("pause");
-		} 		
+		} 
+		//Serial.println(millis()-tm_lastpause);
 	} else if (distance>0) {
 		cn_tobe_pause = (cn_tobe_pause>0)?cn_tobe_pause-1:cn_tobe_pause;			
 		if (isPause)
@@ -205,7 +207,7 @@ void loop()
 	}
 
 
-	if (tm_lastpause-millis() > 120000)
+	if (((millis()-tm_lastpause) > 120000)&&(isTVon==true))
 	{
 		isTVon = false;
 		isPlaying = false;
