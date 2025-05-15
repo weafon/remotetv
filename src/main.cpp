@@ -60,6 +60,7 @@ const char* GestureToString(Gesture gesture) {
 bool isTVon = false;
 bool isPlaying = false;	
 bool isPause = false;
+bool isJumping = false;
 RemoteCommand Gesture2RemoteCommand(Gesture gesture)
 {
 
@@ -70,19 +71,23 @@ RemoteCommand Gesture2RemoteCommand(Gesture gesture)
 //		case GES_BACKWARD:
 //			return RC_OFF;
 		case GES_LEFT:
-			if (isPlaying)
+			if (isJumping) {
+				isJumping = false;
+				return RC_ENTER;
+			} else if (isPlaying)
 			{
 				isPlaying = false;
 				return RC_RETURN;
 			} else {
 				return RC_LEFT;
 			}
-			return RC_LEFT;
 		case GES_RIGHT:
-			if (!isTVon)
-			{
+			if (!isTVon) {
 				isTVon = true;
 				return RC_ON;
+			} else if (isPlaying) {
+				isJumping = true;
+				return RC_RIGHT;
 			} else {
 				return RC_RIGHT;
 			}
@@ -102,7 +107,30 @@ RemoteCommand Gesture2RemoteCommand(Gesture gesture)
 	}
 
 }
+void led_allon()
+{
+	digitalWrite(PIN_RED_LED, HIGH);
+	digitalWrite(PIN_GREEN_LED, HIGH);
+}
+void led_flash_green()
+{
+	digitalWrite(PIN_GREEN_LED, HIGH);
+	delay(150);
+	digitalWrite(PIN_GREEN_LED, LOW);
+	delay(50);
+}
+void led_flash_red()
+{
+	digitalWrite(PIN_RED_LED, HIGH);
+	delay(150);
+	digitalWrite(PIN_RED_LED, LOW);
+	delay(50);
+}
+
 int cn_tobe_pause=0;
+unsigned long tm_lastjump=0, tm_lastpause=0;
+int intv_jump=250; // 250 ms
+#define CN_LEAVE 6
 // *********************************************************************
 void loop()
 {
@@ -115,57 +143,78 @@ void loop()
 		Serial.print("Gesture detected: ");
 		Serial.println(GestureToString(gesture));
 		
-		sendIRCommand(cmd=Gesture2RemoteCommand(gesture));
+		cmd=Gesture2RemoteCommand(gesture);
+		sendIRCommand(cmd);
 		if (cmd == RC_ON)
 		{
 			digitalWrite(PIN_RED_LED, HIGH); // Turn on the red LED before delaying for smooth user experience
 			delay(3000);
 		 	sendIRCommand(RC_ENTER); // for my samsung TV, need to send enter after on to enter youtube
+		}	
+
+		if (isTVon)
+		{
+			digitalWrite(PIN_RED_LED, HIGH);
+		} else {
+			digitalWrite(PIN_RED_LED, LOW);
+		}
+		if (isPlaying)
+		{
+			digitalWrite(PIN_GREEN_LED, HIGH);
+		} else {
+			digitalWrite(PIN_GREEN_LED, LOW);
 		}
 
+	} else if (isJumping) {
 
+		if (millis() - tm_lastjump >= intv_jump) {
+			tm_lastjump = millis();		
+			Serial.println("Jumping");
+			cmd = RC_RIGHT;
+			sendIRCommand(cmd);
+		}
+		
 	}
 	
 	
 	int distance = checkDistance();
 	if (distance > 120)
 	{
-		digitalWrite(PIN_RED_LED, HIGH);
-		digitalWrite(PIN_GREEN_LED, HIGH);
-		delay(200);
-		digitalWrite(PIN_RED_LED, LOW);	
-		digitalWrite(PIN_GREEN_LED, LOW);
-		cn_tobe_pause = (cn_tobe_pause<10)?cn_tobe_pause+1:cn_tobe_pause;			
-		if ((cn_tobe_pause == 10)&&(isPlaying))
+		led_flash_green();
+		cn_tobe_pause = (cn_tobe_pause<CN_LEAVE)?cn_tobe_pause+1:cn_tobe_pause;			
+		if ((cn_tobe_pause == CN_LEAVE)&&(isPlaying))
 		{
 			isPlaying = false;
 			isPause=true;
+			tm_lastpause = millis();
 			sendIRCommand(RC_PAUSE);
 			Serial.println("pause");
 		} 		
 	} else if (distance>0) {
 		cn_tobe_pause = (cn_tobe_pause>0)?cn_tobe_pause-1:cn_tobe_pause;			
+		if (isPause)
+			led_flash_red();
 		if ((cn_tobe_pause == 0)&&(isPause==true))
 		{
 			isPlaying = true;
 			isPause=false;
 			sendIRCommand(RC_PLAY);
 			Serial.println("play");
+			led_allon();
 		}
 	}
 
 
-	if (isTVon)
+	if (tm_lastpause-millis() > 120000)
 	{
-		digitalWrite(PIN_RED_LED, HIGH);
-	} else {
+		isTVon = false;
+		isPlaying = false;
+		isPause = false;
+		cn_tobe_pause = 0;
 		digitalWrite(PIN_RED_LED, LOW);
-	}
-	if (isPlaying)
-	{
-		digitalWrite(PIN_GREEN_LED, HIGH);
-	} else {
 		digitalWrite(PIN_GREEN_LED, LOW);
-	}	
+		sendIRCommand(RC_OFF);
+		Serial.println("TV off");
+	}
 	delay(100);	
 }
