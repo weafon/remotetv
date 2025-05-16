@@ -208,7 +208,7 @@ void loop()
 	}
 
 
-	if (((millis()-tm_lastpause) > 120000)&&(isTVon==true))
+	if (((millis()-tm_lastpause) > 120000)&&(isTVon==true)&&(cn_tobe_pause == CN_LEAVE))
 	{
 		isTVon = false;
 		isPlaying = false;
