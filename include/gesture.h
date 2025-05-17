@@ -10,7 +10,6 @@ enum state_tv
 	YT_PLAYING, // isPlaying Youtube
 	YT_PAUSE, // isPause Youtube
 	YT_JUMPING, // isJumping Youtube
-	YT_MENU
 };
 const char* StateTvToString(enum state_tv state);
 extern enum state_tv tv_state, tv_last_state;

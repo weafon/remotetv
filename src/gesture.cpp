@@ -47,7 +47,7 @@ RemoteCommand Gesture2RemoteCommand(Gesture gesture)
                 return RC_ENTER;
             } else if (tv_state == YT_PLAYING)
             {
-                switch_tv_state(YT_MENU);
+                switch_tv_state(TV_ON);
                 return RC_RETURN;
             } else 
                 return RC_LEFT;
@@ -91,7 +91,6 @@ const char* StateTvToString(enum state_tv state)
         case YT_PLAYING:  return "YT_PLAYING";
         case YT_PAUSE:    return "YT_PAUSE";
         case YT_JUMPING:  return "YT_JUMPING";
-        case YT_MENU:     return "YT_MENU";
         default:          return "UNKNOWN";
     }
 }

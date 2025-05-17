@@ -102,6 +102,7 @@ void loop()
 	{
 		case TV_ON:
 			digitalWrite(PIN_RED_LED, HIGH);
+			digitalWrite(PIN_GREEN_LED, LOW);
 			break;
 		case TV_OFF:
 			digitalWrite(PIN_RED_LED, LOW);
@@ -110,10 +111,6 @@ void loop()
 		case YT_PLAYING:
 			digitalWrite(PIN_GREEN_LED, HIGH);
 			digitalWrite(PIN_RED_LED, HIGH);
-			break;
-		case YT_MENU:
-			digitalWrite(PIN_RED_LED, HIGH);
-			digitalWrite(PIN_GREEN_LED, LOW);
 			break;
 		case YT_PAUSE:
 			digitalWrite(PIN_GREEN_LED, LOW);
@@ -138,7 +135,7 @@ void loop()
 	{
 		if (cn_tobe_pause<CN_LEAVE)
 		{
-			if ((tv_state == YT_PLAYING)||(tv_state == YT_MENU))
+			if ((tv_state == YT_PLAYING)||(tv_state == TV_ON))
 				led_flash_red();
 			cn_tobe_pause ++;
 		}
