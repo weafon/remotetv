@@ -74,7 +74,7 @@ void sendIRCommand(RemoteCommand command)
 			message = "sent: pause";
 			break;
         default:
-            Serial.println("Invalid key");
+			message = "no sent command";
             return;
     }
 

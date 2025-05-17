@@ -1,9 +1,11 @@
 // 這些都是跟AI一起隨便寫的醜CODE 請不要當作weafon的寫作標準喔
-// Includes enum definition of GES_* return values from readGesture()
+
 #include "RevEng_PAJ7620.h"
 #include "samsung-remote.h"
 #include "sonar.h"
-// Create gesture sensor driver object
+#include "gesture.h"
+
+
 RevEng_PAJ7620 sensor = RevEng_PAJ7620();
 
 #define PIN_RED_LED PD4
@@ -43,72 +45,9 @@ void setup()
 }
 
 
-const char* GestureToString(Gesture gesture) {
-	switch (gesture) {
-		case GES_NONE:return "None";
-		case GES_UP:return "Up";
-		case GES_DOWN:return "Down";
-		case GES_LEFT:return "Left";
-		case GES_RIGHT: return "Right";
-		case GES_FORWARD: return "Forward";
-		case GES_BACKWARD:return "Backward";
-		case GES_CLOCKWISE: return "Clockwise";
-		case GES_ANTICLOCKWISE: return "Anticlockwise";
-		case GES_WAVE:return "Wave";
-		default:return "Unknown";
-	}
-}
-bool isTVon = false;
-bool isPlaying = false;	
-bool isPause = false;
-bool isJumping = false;
-RemoteCommand Gesture2RemoteCommand(Gesture gesture)
-{
 
-	switch (gesture)
-	{
-//		case GES_FORWARD:
-//			return RC_ON;
-//		case GES_BACKWARD:
-//			return RC_OFF;
-		case GES_LEFT:
-			if (isJumping) {
-				isJumping = false;
-				return RC_ENTER;
-			} else if (isPlaying)
-			{
-				isPlaying = false;
-				return RC_RETURN;
-			} else {
-				return RC_LEFT;
-			}
-		case GES_RIGHT:
-			if (!isTVon) {
-				isTVon = true;
-				return RC_ON;
-			} else if (isPlaying) {
-				isJumping = true;
-				return RC_RIGHT;
-			} else {
-				return RC_RIGHT;
-			}
-		case GES_UP:
-			return RC_UP;
-		case GES_DOWN:
-			return RC_DOWN;
-		case GES_CLOCKWISE:
-		case GES_FORWARD:
-			isPlaying = true;
-			return RC_ENTER;
-		case GES_ANTICLOCKWISE:
-			isPlaying = false;
-			isTVon = false;
-			return RC_OFF;
-		default:
-			return RC_INVALID_KEY;
-	}
 
-}
+
 void led_allon()
 {
 	digitalWrite(PIN_RED_LED, HIGH);
@@ -133,6 +72,9 @@ int cn_tobe_pause=0;
 unsigned long tm_lastjump=0, tm_lastpause=0;
 int intv_jump=250; // 250 ms
 #define CN_LEAVE 6
+
+
+
 // *********************************************************************
 void loop()
 {
@@ -154,74 +96,78 @@ void loop()
 		 	sendIRCommand(RC_ENTER); // for my samsung TV, need to send enter after on to enter youtube
 		}	
 
-		if (isTVon)
-		{
-			digitalWrite(PIN_RED_LED, HIGH);
-		} else {
-			digitalWrite(PIN_RED_LED, LOW);
-		}
-		if (isPlaying)
-		{
-			digitalWrite(PIN_GREEN_LED, HIGH);
-		} else {
-			digitalWrite(PIN_GREEN_LED, LOW);
-		}
 
 	} 
-	if (isJumping) {
+	switch(tv_state)
+	{
+		case TV_ON:
+			digitalWrite(PIN_RED_LED, HIGH);
+			break;
+		case TV_OFF:
+			digitalWrite(PIN_RED_LED, LOW);
+			digitalWrite(PIN_GREEN_LED, LOW);
+			break;
+		case YT_PLAYING:
+			digitalWrite(PIN_GREEN_LED, HIGH);
+			digitalWrite(PIN_RED_LED, HIGH);
+			break;
+		case YT_MENU:
+			digitalWrite(PIN_RED_LED, HIGH);
+			digitalWrite(PIN_GREEN_LED, LOW);
+			break;
+		case YT_PAUSE:
+			digitalWrite(PIN_GREEN_LED, LOW);
+			digitalWrite(PIN_RED_LED, HIGH);
+			break;
+		case YT_JUMPING:
+			if (((int)(millis() - tm_lastjump)) >= intv_jump) {
+				tm_lastjump = millis();		
+				Serial.println("Jumping");
+				cmd = RC_RIGHT;
+				sendIRCommand(cmd);
+			}
+			break;
 
-		if (((int)(millis() - tm_lastjump)) >= intv_jump) {
-			tm_lastjump = millis();		
-			Serial.println("Jumping");
-			cmd = RC_RIGHT;
-			sendIRCommand(cmd);
-		}
-		
 	}
 	delay(100);	
-	if (isTVon==false)
+	if (tv_state == TV_OFF)
 		return;
 	
 	int distance = checkDistance();
 	if (distance > 120)
 	{
-		led_flash_green();
-		cn_tobe_pause = (cn_tobe_pause<CN_LEAVE)?cn_tobe_pause+1:cn_tobe_pause;			
-		
-		if ((cn_tobe_pause == CN_LEAVE)&&(isPlaying))
+		if (cn_tobe_pause<CN_LEAVE)
 		{
-			isPlaying = false;
-			isPause=true;
-			tm_lastpause = millis();
-			sendIRCommand(RC_PAUSE);
-			Serial.println("pause");
-		} 
-		//Serial.println(millis()-tm_lastpause);
-	} else if (distance>0) {
-		cn_tobe_pause = (cn_tobe_pause>0)?cn_tobe_pause-1:cn_tobe_pause;			
-		if (isPause)
-			led_flash_red();
-		if ((cn_tobe_pause == 0)&&(isPause==true))
-		{
-			isPlaying = true;
-			isPause=false;
-			sendIRCommand(RC_PLAY);
-			Serial.println("play");
-			led_allon();
+			if ((tv_state == YT_PLAYING)||(tv_state == YT_MENU))
+				led_flash_red();
+			cn_tobe_pause ++;
 		}
-	}
+		if ((cn_tobe_pause == CN_LEAVE)&&(tv_state == YT_PLAYING))
+        {
+            switch_tv_state(YT_PAUSE);
+            tm_lastpause = millis();
+            sendIRCommand(RC_PAUSE);
+            Serial.println("pause");
+        } 
+    } else if (distance>0) {
+        cn_tobe_pause = (cn_tobe_pause>0)?cn_tobe_pause-1:cn_tobe_pause;
+        if (tv_state == YT_PAUSE)
+            led_flash_green();
+        if ((cn_tobe_pause == 0)&&(tv_state == YT_PAUSE))
+        {
+            switch_tv_state(YT_PLAYING);
+            sendIRCommand(RC_PLAY);
+            Serial.println("play");
+        }
+    }
 
 
-	if (((millis()-tm_lastpause) > 120000)&&(cn_tobe_pause == CN_LEAVE))
-	{
-		isTVon = false;
-		isPlaying = false;
-		isPause = false;
-		cn_tobe_pause = 0;
-		digitalWrite(PIN_RED_LED, LOW);
-		digitalWrite(PIN_GREEN_LED, LOW);
-		sendIRCommand(RC_OFF);
-		Serial.println("TV off");
-	}
-	
+    if (((millis()-tm_lastpause) > 120000)&&(cn_tobe_pause == CN_LEAVE))
+    {
+        switch_tv_state(TV_OFF);
+        cn_tobe_pause = 0;
+        sendIRCommand(RC_OFF);
+        Serial.println("TV off");
+    }
+
 }
