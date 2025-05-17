@@ -97,6 +97,7 @@ RemoteCommand Gesture2RemoteCommand(Gesture gesture)
 		case GES_DOWN:
 			return RC_DOWN;
 		case GES_CLOCKWISE:
+		case GES_FORWARD:
 			isPlaying = true;
 			return RC_ENTER;
 		case GES_ANTICLOCKWISE:
@@ -166,7 +167,8 @@ void loop()
 			digitalWrite(PIN_GREEN_LED, LOW);
 		}
 
-	} else if (isJumping) {
+	} 
+	if (isJumping) {
 
 		if (((int)(millis() - tm_lastjump)) >= intv_jump) {
 			tm_lastjump = millis();		
@@ -176,7 +178,9 @@ void loop()
 		}
 		
 	}
-	
+	delay(100);	
+	if (isTVon==false)
+		return;
 	
 	int distance = checkDistance();
 	if (distance > 120)
@@ -208,7 +212,7 @@ void loop()
 	}
 
 
-	if (((millis()-tm_lastpause) > 120000)&&(isTVon==true)&&(cn_tobe_pause == CN_LEAVE))
+	if (((millis()-tm_lastpause) > 120000)&&(cn_tobe_pause == CN_LEAVE))
 	{
 		isTVon = false;
 		isPlaying = false;
@@ -219,5 +223,5 @@ void loop()
 		sendIRCommand(RC_OFF);
 		Serial.println("TV off");
 	}
-	delay(100);	
+	
 }
